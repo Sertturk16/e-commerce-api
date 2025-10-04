@@ -1,0 +1,75 @@
+version: '3.8'
+
+services:
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: sirius-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    networks:
+      - sirius-network
+
+  # SQL Server Database
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sirius-mssql
+    ports:
+      - "1433:1433"
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=SiriusDB@2024
+      - MSSQL_PID=Developer
+    volumes:
+      - mssql-data:/var/opt/mssql
+    restart: unless-stopped
+    healthcheck:
+      test: /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P SiriusDB@2024 -Q "SELECT 1" || exit 1
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    networks:
+      - sirius-network
+
+  # API Application (optional - for full stack deployment)
+  # Uncomment to run the API in Docker
+  # api:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   container_name: sirius-api
+  #   ports:
+  #     - "3000:3000"
+  #   environment:
+  #     - NODE_ENV=production
+  #     - PORT=3000
+  #     - DATABASE_URL=sqlserver://mssql:1433;database=sirius_ecommerce;user=sa;password=SiriusDB@2024;encrypt=true;trustServerCertificate=true
+  #     - REDIS_URL=redis://redis:6379
+  #     - JWT_SECRET=${JWT_SECRET}
+  #     - RATE_LIMIT_MAX=100
+  #     - RATE_LIMIT_TIMEWINDOW=60000
+  #   depends_on:
+  #     redis:
+  #       condition: service_healthy
+  #     mssql:
+  #       condition: service_healthy
+  #   restart: unless-stopped
+  #   networks:
+  #     - sirius-network
+
+volumes:
+  redis-data:
+  mssql-data:
+
+networks:
+  sirius-network:
+    driver: bridge

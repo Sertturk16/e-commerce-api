@@ -1,0 +1,175 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "sqlserver"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  salt          String
+  hash          String
+  name          String
+  role          String    @default("CUSTOMER") // CUSTOMER or SELLER
+  phone         String?
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+  products      Product[]
+  carts         Cart[]
+  orders        Order[]
+  seller_orders OrderItem[] @relation("SellerOrders")
+  favorites     Favorite[]
+  addresses     Address[]
+}
+
+model Product {
+  id             String          @id @default(uuid())
+  name           String
+  description    String?
+  price          Float
+  stock          Int             @default(0)
+  category       String
+  seller_id      String
+  images         String?         // JSON array of image paths
+  variants       String?         // JSON array of variants (color, size, etc.)
+  created_at     DateTime        @default(now())
+  updated_at     DateTime        @updatedAt
+
+  seller         User            @relation(fields: [seller_id], references: [id])
+  cart_items     CartItem[]
+  order_items    OrderItem[]
+  favorites      Favorite[]
+
+  @@index([category])
+  @@index([seller_id])
+}
+
+model Cart {
+  id              String      @id @default(uuid())
+  user_id         String?     // null for anonymous users
+  session_id      String?     // for anonymous users
+  expires_at      DateTime?   // 24h TTL for anonymous carts
+  created_at      DateTime    @default(now())
+  updated_at      DateTime    @updatedAt
+
+  user            User?       @relation(fields: [user_id], references: [id])
+  items           CartItem[]
+
+  @@unique([user_id])
+  @@index([session_id])
+  @@index([expires_at])
+}
+
+model CartItem {
+  id              String      @id @default(uuid())
+  cart_id         String
+  product_id      String
+  quantity        Int
+  reservation_expires_at DateTime? // Stock reservation expiry
+  created_at      DateTime    @default(now())
+  updated_at      DateTime    @updatedAt
+
+  cart            Cart        @relation(fields: [cart_id], references: [id], onDelete: Cascade)
+  product         Product     @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([cart_id, product_id])
+  @@index([product_id])
+  @@index([reservation_expires_at])
+}
+
+model Order {
+  id              String      @id @default(uuid())
+  user_id         String
+  address_id      String?     // Reference to user's address
+  parent_order_id String?     // For sub-orders, link to parent order
+  seller_id       String?     // For sub-orders, which seller owns this order
+  total_amount    Float
+  status          String      @default("PENDING") // PENDING, CONFIRMED, SHIPPED, DELIVERED, CANCELLED
+  payment_method  String?     // For future: CREDIT_CARD, PAYPAL, etc.
+  payment_status  String      @default("PENDING") // PENDING, PAID, FAILED, REFUNDED
+  shipping_address String     // Keep for backward compatibility
+  is_parent       Boolean     @default(false) // True if this is a parent order (user-facing)
+  created_at      DateTime    @default(now())
+  updated_at      DateTime    @updatedAt
+
+  user            User        @relation(fields: [user_id], references: [id])
+  address         Address?    @relation(fields: [address_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  parent_order    Order?      @relation("ParentChild", fields: [parent_order_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  sub_orders      Order[]     @relation("ParentChild")
+  items           OrderItem[]
+
+  @@index([user_id])
+  @@index([address_id])
+  @@index([parent_order_id])
+  @@index([seller_id])
+  @@index([status])
+  @@index([is_parent])
+  @@index([created_at])
+}
+
+model OrderItem {
+  id              String      @id @default(uuid())
+  order_id        String
+  product_id      String
+  seller_id       String      // To separate orders by seller
+  quantity        Int
+  price           Float       // Price at the time of order
+  status          String      @default("PENDING") // PENDING, CONFIRMED, SHIPPED, DELIVERED, CANCELLED
+  created_at      DateTime    @default(now())
+  updated_at      DateTime    @updatedAt
+
+  order           Order       @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  product         Product     @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  seller          User        @relation("SellerOrders", fields: [seller_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([order_id])
+  @@index([product_id])
+  @@index([seller_id])
+  @@index([status])
+}
+
+model Favorite {
+  id         String   @id @default(uuid())
+  user_id    String
+  product_id String
+  created_at DateTime @default(now())
+
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  product    Product  @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([user_id, product_id])
+  @@index([user_id])
+  @@index([product_id])
+}
+
+model Address {
+  id          String   @id @default(uuid())
+  user_id     String
+  title       String   // e.g., "Home", "Work", "Office"
+  full_name   String
+  phone       String
+  country     String
+  city        String
+  district    String?
+  postal_code String
+  address_line String  // Full address text
+  is_default  Boolean  @default(false)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  user        User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  orders      Order[]
+
+  @@index([user_id])
+  @@index([is_default])
+}
