@@ -48,7 +48,29 @@ This will start:
 npx prisma migrate dev
 ```
 
-### 6. Start the development server
+### 6. Seed the database (optional)
+
+Populate your database with test data:
+
+```bash
+npm run db:seed
+```
+
+This creates:
+- 10 customers and 5 sellers
+- 20+ addresses
+- 50+ products across multiple categories
+- Favorites, carts, and orders with realistic data
+
+To clear all data:
+
+```bash
+npm run db:clear
+```
+
+**Test credentials**: All seeded users have the password `Test123!@#`
+
+### 7. Start the development server
 
 ```bash
 npm run dev
@@ -68,10 +90,12 @@ http://localhost:3000/docs
 ## 🔧 Available Scripts
 
 ```bash
-npm run dev          # Start development server with hot reload
-npm run build        # Build for production
-npm start            # Start production server
-npm run prisma:studio # Open Prisma Studio (database GUI)
+npm run dev            # Start development server with hot reload
+npm run build          # Build for production
+npm start              # Start production server
+npm run prisma:studio  # Open Prisma Studio (database GUI)
+npm run db:seed        # Populate database with test data
+npm run db:clear       # Clear all data from database
 ```
 
 ## 🐳 Docker Support
