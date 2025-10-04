@@ -10,7 +10,6 @@ A comprehensive, production-ready e-commerce backend built with **Fastify**, **T
 - **Database**: SQL Server
 - **ORM**: Prisma
 - **Caching**: Redis
-- **Testing**: Vitest + Testcontainers
 - **Documentation**: Swagger/OpenAPI 3.0
 
 
@@ -65,13 +64,6 @@ Interactive Swagger documentation is available at:
 http://localhost:3000/docs
 ```
 
-## 🧪 Testing
-
-Run the complete test suite (207 tests):
-
-```bash
-npm test
-```
 
 ## 🔧 Available Scripts
 
@@ -79,7 +71,6 @@ npm test
 npm run dev          # Start development server with hot reload
 npm run build        # Build for production
 npm start            # Start production server
-npm test             # Run all tests
 npm run prisma:studio # Open Prisma Studio (database GUI)
 ```
 

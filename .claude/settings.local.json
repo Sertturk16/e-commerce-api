@@ -4,7 +4,8 @@
       "Bash(test:*)",
       "Bash(npx prisma db push:*)",
       "Bash(npm test)",
-      "Bash(npx prisma generate:*)"
+      "Bash(npx prisma generate:*)",
+      "Bash(rm:*)"
     ],
     "deny": [],
     "ask": []
