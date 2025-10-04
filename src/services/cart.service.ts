@@ -394,9 +394,10 @@ export class CartService {
       } catch (error: any) {
         // Handle race condition where another concurrent request created the cart
         if (error.code === 'P2002') {
-          userCart = await prisma.cart.findUnique({
+          userCart = await prisma.cart.findFirst({
             where: { user_id: userId },
             include: { items: true },
+            orderBy: { created_at: 'desc' },
           });
           if (!userCart) {
             throw error; // Re-throw if still not found

@@ -20,7 +20,7 @@ export class OrderService {
     paymentMethod?: string
   ): Promise<OrderResponse> {
     // Get user's cart with items
-    const cart = await prisma.cart.findUnique({
+    const cart = await prisma.cart.findFirst({
       where: { user_id: userId },
       include: {
         items: {
@@ -33,6 +33,7 @@ export class OrderService {
           },
         },
       },
+      orderBy: { created_at: 'desc' },
     });
 
     if (!cart || cart.items.length === 0) {
