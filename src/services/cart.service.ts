@@ -62,15 +62,14 @@ export class CartService {
 
         // Find or create cart
         let cart = userId
-          ? await prisma.cart.findUnique({ where: { user_id: userId }, include: { items: true } })
+          ? await prisma.cart.findFirst({ where: { user_id: userId }, include: { items: true } })
           : sessionId
           ? await prisma.cart.findFirst({
               where: {
                 session_id: sessionId,
-                user_id: null, // Only anonymous carts
+                user_id: null,
               },
               include: { items: true },
-              orderBy: { created_at: 'desc' },
             })
           : null;
 
@@ -103,7 +102,7 @@ export class CartService {
               // The error could be on user_id or session_id
               // Try to fetch the cart that was created by concurrent request
               if (userId) {
-                cart = await prisma.cart.findUnique({
+                cart = await prisma.cart.findFirst({
                   where: { user_id: userId },
                   include: { items: true }
                 });
@@ -212,13 +211,11 @@ export class CartService {
       async () => {
         // Get cart
         const cart = userId
-          ? await prisma.cart.findUnique({ where: { user_id: userId } })
-          : await prisma.cart.findFirst({
+          ? await prisma.cart.findFirst({ where: { user_id: userId } })
+          : await prisma.cart.findUnique({
               where: {
                 session_id: sessionId!,
-                user_id: null,
               },
-              orderBy: { created_at: 'desc' },
             });
 
         if (!cart) {
@@ -302,13 +299,11 @@ export class CartService {
 
     // Get cart
     const cart = userId
-      ? await prisma.cart.findUnique({ where: { user_id: userId } })
-      : await prisma.cart.findFirst({
+      ? await prisma.cart.findFirst({ where: { user_id: userId } })
+      : await prisma.cart.findUnique({
           where: {
             session_id: sessionId!,
-            user_id: null,
           },
-          orderBy: { created_at: 'desc' },
         });
 
     if (!cart) {
