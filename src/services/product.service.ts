@@ -1,5 +1,6 @@
 import { prisma } from '../config/database';
 import { CreateProductInput, UpdateProductInput, UpdateStockInput } from '../types/product';
+import { cacheService, CacheKeys } from '../utils/cache';
 
 export class ProductService {
   async createProduct(sellerId: string, data: CreateProductInput) {
@@ -39,6 +40,11 @@ export class ProductService {
         },
       },
     });
+
+    // Invalidate product list caches
+    cacheService.deletePattern(CacheKeys.allProductLists());
+    cacheService.deletePattern(CacheKeys.productsByCategory(data.category));
+    cacheService.deletePattern(CacheKeys.productsBySeller(sellerId));
 
     return this.formatProduct(product);
   }
@@ -81,6 +87,15 @@ export class ProductService {
       },
     });
 
+    // Invalidate caches
+    cacheService.delete(CacheKeys.product(productId)); // Specific product
+    cacheService.deletePattern(CacheKeys.allProductLists()); // All product lists
+    cacheService.deletePattern(CacheKeys.productsByCategory(existingProduct.category)); // Old category
+    if (data.category && data.category !== existingProduct.category) {
+      cacheService.deletePattern(CacheKeys.productsByCategory(data.category)); // New category if changed
+    }
+    cacheService.deletePattern(CacheKeys.productsBySeller(sellerId));
+
     return this.formatProduct(product);
   }
 
@@ -114,6 +129,12 @@ export class ProductService {
       where: { id: productId },
       data: { stock: data.stock },
     });
+
+    // Invalidate caches (stock affects availability)
+    cacheService.delete(CacheKeys.product(productId));
+    cacheService.deletePattern(CacheKeys.allProductLists());
+    cacheService.deletePattern(CacheKeys.productsByCategory(existingProduct.category));
+    cacheService.deletePattern(CacheKeys.productsBySeller(sellerId));
 
     return this.formatProduct(product);
   }

@@ -1,6 +1,7 @@
 import { prisma } from '../config/database';
 import { OrderResponse, OrderStatus, PaymentStatus, SellerOrderResponse } from '../types/order';
 import { DistributedLock } from '../utils/distributed-lock';
+import { cacheService, CacheKeys } from '../utils/cache';
 
 export class OrderService {
   /**
@@ -169,6 +170,13 @@ export class OrderService {
 
               if (updateResult.count === 0) {
                 throw new Error(`Insufficient stock for ${item.product.name}`);
+              }
+
+              // Invalidate product cache after stock update
+              cacheService.delete(CacheKeys.product(item.product_id));
+              cacheService.deletePattern(CacheKeys.allProductLists());
+              if (product.category) {
+                cacheService.deletePattern(`products:.*cat:${product.category}.*`);
               }
 
               // Create order item in sub-order
@@ -355,6 +363,13 @@ export class OrderService {
                     },
                   },
                 });
+
+                // Invalidate product cache after stock update
+                cacheService.delete(CacheKeys.product(item.product_id));
+                cacheService.deletePattern(CacheKeys.allProductLists());
+                if (item.product.category) {
+                  cacheService.deletePattern(`products:.*cat:${item.product.category}.*`);
+                }
               },
               10000,
               15000
@@ -377,6 +392,13 @@ export class OrderService {
                   },
                 },
               });
+
+              // Invalidate product cache after stock update
+              cacheService.delete(CacheKeys.product(item.product_id));
+              cacheService.deletePattern(CacheKeys.allProductLists());
+              if (item.product.category) {
+                cacheService.deletePattern(`products:.*cat:${item.product.category}.*`);
+              }
             },
             10000,
             15000
@@ -471,6 +493,13 @@ export class OrderService {
                 },
               },
             });
+
+            // Invalidate product cache after stock update
+            cacheService.delete(CacheKeys.product(item.product_id));
+            cacheService.deletePattern(CacheKeys.allProductLists());
+            if (item.product.category) {
+              cacheService.deletePattern(`products:.*cat:${item.product.category}.*`);
+            }
           },
           10000,
           15000
