@@ -79,6 +79,21 @@ export class CartService {
             throw new Error('Either user authentication or session ID is required');
           }
 
+          // Application-level uniqueness check before creating cart
+          const existingCart = userId
+            ? await prisma.cart.findFirst({ where: { user_id: userId } })
+            : await prisma.cart.findFirst({
+                where: { session_id: sessionId, user_id: null },
+              });
+
+          if (existingCart) {
+            throw new Error(
+              userId
+                ? 'Cart already exists for this user'
+                : 'Cart already exists for this session'
+            );
+          }
+
           const expiresAt = sessionId
             ? new Date(Date.now() + ANONYMOUS_CART_TTL_HOURS * 60 * 60 * 1000)
             : null;
@@ -97,32 +112,25 @@ export class CartService {
             });
           } catch (error: any) {
             // Handle race condition where cart was created by another request
-            // P2002 = Unique constraint violation
-            if (error.code === 'P2002') {
-              // The error could be on user_id or session_id
-              // Try to fetch the cart that was created by concurrent request
-              if (userId) {
-                cart = await prisma.cart.findFirst({
-                  where: { user_id: userId },
-                  include: { items: true }
-                });
-              } else if (sessionId) {
-                cart = await prisma.cart.findFirst({
-                  where: {
-                    session_id: sessionId,
-                    user_id: null,
-                  },
-                  include: { items: true },
-                  orderBy: { created_at: 'desc' },
-                });
-              }
+            if (userId) {
+              cart = await prisma.cart.findFirst({
+                where: { user_id: userId },
+                include: { items: true },
+                orderBy: { created_at: 'desc' },
+              });
+            } else if (sessionId) {
+              // For session-based carts, get the most recent one
+              cart = await prisma.cart.findFirst({
+                where: {
+                  session_id: sessionId,
+                  user_id: null,
+                },
+                include: { items: true },
+                orderBy: { created_at: 'desc' },
+              });
+            }
 
-              // If still not found, the error is on session_id=null constraint in SQL Server
-              // In this case, user must be authenticated
-              if (!cart) {
-                throw new Error('Unable to create cart. Please try again or contact support.');
-              }
-            } else {
+            if (!cart) {
               throw error;
             }
           }
@@ -212,10 +220,12 @@ export class CartService {
         // Get cart
         const cart = userId
           ? await prisma.cart.findFirst({ where: { user_id: userId } })
-          : await prisma.cart.findUnique({
+          : await prisma.cart.findFirst({
               where: {
                 session_id: sessionId!,
+                user_id: null,
               },
+              orderBy: { created_at: 'desc' },
             });
 
         if (!cart) {
@@ -300,10 +310,12 @@ export class CartService {
     // Get cart
     const cart = userId
       ? await prisma.cart.findFirst({ where: { user_id: userId } })
-      : await prisma.cart.findUnique({
+      : await prisma.cart.findFirst({
           where: {
             session_id: sessionId!,
+            user_id: null,
           },
+          orderBy: { created_at: 'desc' },
         });
 
     if (!cart) {
@@ -365,9 +377,10 @@ export class CartService {
     }
 
     // Get or create user cart
-    let userCart = await prisma.cart.findUnique({
+    let userCart = await prisma.cart.findFirst({
       where: { user_id: userId },
       include: { items: true },
+      orderBy: { created_at: 'desc' },
     });
 
     if (!userCart) {
@@ -498,7 +511,7 @@ export class CartService {
     });
 
     const cart = userId
-      ? await prisma.cart.findUnique({
+      ? await prisma.cart.findFirst({
           where: { user_id: userId },
           include: {
             items: {
@@ -516,6 +529,7 @@ export class CartService {
               },
             },
           },
+          orderBy: { created_at: 'desc' },
         })
       : await prisma.cart.findFirst({
           where: {

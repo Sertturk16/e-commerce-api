@@ -65,8 +65,8 @@ model Cart {
   user            User?       @relation(fields: [user_id], references: [id])
   items           CartItem[]
 
-  @@unique([user_id])
-  @@unique([session_id])
+  @@index([user_id])
+  @@index([session_id])
   @@index([expires_at])
 }
 

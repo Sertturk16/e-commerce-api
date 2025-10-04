@@ -80,7 +80,7 @@ export const updateCartSchema = {
     required: ['product_id', 'quantity'],
     properties: {
       product_id: { type: 'string', format: 'uuid', description: 'Product ID' },
-      quantity: { type: 'integer', minimum: 1, description: 'New quantity' }
+      quantity: { type: 'integer', minimum: 0, description: 'New quantity (0 to remove item)' }
     }
   },
   response: {
