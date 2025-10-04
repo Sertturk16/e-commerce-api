@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(test:*)"
+      "Bash(test:*)",
+      "Bash(npx prisma db push:*)"
     ],
     "deny": [],
     "ask": []
