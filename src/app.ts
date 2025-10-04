@@ -100,7 +100,7 @@ export const buildApp = async () => {
   app.setErrorHandler(errorHandler);
 
   // Request Logging Middleware
-  app.addHook('onRequest', async (request, reply) => {
+  app.addHook('onRequest', async (request, _reply) => {
     logger.http(`${request.method} ${request.url}`, {
       ip: request.ip,
       userAgent: request.headers['user-agent'],
