@@ -16,6 +16,8 @@ import { favoriteRoutes } from './routes/favorite.routes';
 import { addressRoutes } from './routes/address.routes';
 import { paymentRoutes } from './routes/payment.routes';
 import { healthCheckSchema } from './schemas/health.schema';
+import { errorHandler } from './middleware/errorHandler.middleware';
+import { logger } from './config/logger';
 
 export const buildApp = async () => {
   const app = Fastify({
@@ -93,6 +95,24 @@ export const buildApp = async () => {
       timeWindow: parseInt(env.RATE_LIMIT_TIMEWINDOW),
     });
   }
+
+  // Error Handler
+  app.setErrorHandler(errorHandler);
+
+  // Request Logging Middleware
+  app.addHook('onRequest', async (request, reply) => {
+    logger.http(`${request.method} ${request.url}`, {
+      ip: request.ip,
+      userAgent: request.headers['user-agent'],
+    });
+  });
+
+  app.addHook('onResponse', async (request, reply) => {
+    logger.http(`${request.method} ${request.url} - ${reply.statusCode}`, {
+      ip: request.ip,
+      responseTime: reply.getResponseTime(),
+    });
+  });
 
   // Routes
   await app.register(authRoutes);
