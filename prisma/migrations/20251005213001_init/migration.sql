@@ -41,8 +41,7 @@ CREATE TABLE [dbo].[Cart] (
     [expires_at] DATETIME2,
     [created_at] DATETIME2 NOT NULL CONSTRAINT [Cart_created_at_df] DEFAULT CURRENT_TIMESTAMP,
     [updated_at] DATETIME2 NOT NULL,
-    CONSTRAINT [Cart_pkey] PRIMARY KEY CLUSTERED ([id]),
-    CONSTRAINT [Cart_user_id_key] UNIQUE NONCLUSTERED ([user_id])
+    CONSTRAINT [Cart_pkey] PRIMARY KEY CLUSTERED ([id])
 );
 
 -- CreateTable
@@ -123,6 +122,9 @@ CREATE NONCLUSTERED INDEX [Product_category_idx] ON [dbo].[Product]([category]);
 
 -- CreateIndex
 CREATE NONCLUSTERED INDEX [Product_seller_id_idx] ON [dbo].[Product]([seller_id]);
+
+-- CreateIndex
+CREATE NONCLUSTERED INDEX [Cart_user_id_idx] ON [dbo].[Cart]([user_id]);
 
 -- CreateIndex
 CREATE NONCLUSTERED INDEX [Cart_session_id_idx] ON [dbo].[Cart]([session_id]);
